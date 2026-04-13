@@ -1,95 +1,99 @@
-import express from "express";
-import cors from "cors";
-
+const express = require('express');
 const app = express();
+const PORT = 3000;
 
-// Middleware
-app.use(cors());
 app.use(express.json());
 
-// In-memory array (acts like database)
+// ─── IN-MEMORY DATABASE ─────────────────────────────
 let students = [
-  { id: 1, name: "Rahul", age: 20, course: "BCA" },
-  { id: 2, name: "Anita", age: 22, course: "BBA" }
+  {
+    id: "STU1001",
+    firstName: "Arjun",
+    lastName: "Raval",
+    cls: "Class 10",
+    section: "A",
+    gender: "Male",
+    dob: "2008-05-10",
+    parent: "Rajesh Raval",
+    phone: "9876543210",
+    address: "Ahmedabad",
+    status: "Active",
+    att: 92
+  },
+  {
+    id: "STU1002",
+    firstName: "Priya",
+    lastName: "Shah",
+    cls: "Class 9",
+    section: "B",
+    gender: "Female",
+    dob: "2009-08-21",
+    parent: "Amit Shah",
+    phone: "9123456780",
+    address: "Surat",
+    status: "At Risk",
+    att: 68
+  }
 ];
 
+// Helper to generate ID
+function generateId() {
+  return "STU" + Math.floor(1000 + Math.random() * 9000);
+}
 
-// ✅ GET all students
-app.get("/students", (req, res) => {
-  res.json(students);
+// ─── ROUTES ─────────────────────────────
+
+// GET all students
+app.get('/api/students', (req, res) => {
+  res.json({ success: true, data: students });
 });
 
-
-// ✅ GET single student
-app.get("/students/:id", (req, res) => {
-  const id = parseInt(req.params.id);
-  const student = students.find(s => s.id === id);
-
+// GET single student
+app.get('/api/students/:id', (req, res) => {
+  const student = students.find(s => s.id === req.params.id);
   if (!student) {
-    return res.status(404).json({ message: "Student not found" });
+    return res.status(404).json({ success: false, message: "Student not found" });
+  }
+  res.json({ success: true, data: student });
+});
+
+// ADD student
+app.post('/api/students', (req, res) => {
+  const newStudent = {
+    id: generateId(),
+    ...req.body
+  };
+  students.push(newStudent);
+  res.json({ success: true, message: "Student added", data: newStudent });
+});
+
+// UPDATE student
+app.put('/api/students/:id', (req, res) => {
+  const index = students.findIndex(s => s.id === req.params.id);
+  if (index === -1) {
+    return res.status(404).json({ success: false, message: "Student not found" });
   }
 
-  res.json(student);
-});
-
-
-// ✅ CREATE student
-app.post("/students", (req, res) => {
-  const { name, age, course } = req.body;
-
-  const newStudent = {
-    id: students.length + 1,
-    name,
-    age,
-    course
+  students[index] = {
+    ...students[index],
+    ...req.body
   };
 
-  students.push(newStudent);
-  res.status(201).json(newStudent);
+  res.json({ success: true, message: "Student updated", data: students[index] });
 });
 
-
-// ✅ UPDATE student
-app.put("/students/:id", (req, res) => {
-  const id = parseInt(req.params.id);
-  const student = students.find(s => s.id === id);
-
-  if (!student) {
-    return res.status(404).json({ message: "Student not found" });
-  }
-
-  const { name, age, course } = req.body;
-
-  student.name = name || student.name;
-  student.age = age || student.age;
-  student.course = course || student.course;
-
-  res.json(student);
-});
-
-
-// ✅ DELETE student
-app.delete("/students/:id", (req, res) => {
-  const id = parseInt(req.params.id);
-  const index = students.findIndex(s => s.id === id);
-
+// DELETE student
+app.delete('/api/students/:id', (req, res) => {
+  const index = students.findIndex(s => s.id === req.params.id);
   if (index === -1) {
-    return res.status(404).json({ message: "Student not found" });
+    return res.status(404).json({ success: false, message: "Student not found" });
   }
 
-  const deletedStudent = students.splice(index, 1);
-  res.json({ message: "Deleted", data: deletedStudent });
+  const deleted = students.splice(index, 1);
+  res.json({ success: true, message: "Student deleted", data: deleted[0] });
 });
 
-
-// Default route
-app.get("/", (req, res) => {
-  res.send("Server Running 🚀");
-});
-
-
-// Server start
-const PORT = 5000;
+// ─── START SERVER ─────────────────────────────
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`Server running on http://localhost:${PORT}`);
 });
