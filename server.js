@@ -1,29 +1,20 @@
 import express from 'express';
-import cors from 'cors';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ✅ CORS — allow ALL origins (for testing / development)
-app.use(cors({
-  origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
-
-// ✅ Handle preflight for ALL routes
-app.options('*', cors());
-
-// ✅ Extra safety headers (belt + suspenders)
+// ✅ CORS — manual middleware applied FIRST, before everything else
+// This ensures CORS headers are on ALL responses including errors
 app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  if (req.method === 'OPTIONS') return res.sendStatus(200);
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
   next();
 });
 
-// Parse JSON bodies
 app.use(express.json());
 
 // ─── IN-MEMORY DATABASE ─────────────────────────────
@@ -121,7 +112,7 @@ function generateId() {
 
 // ─── ROUTES ─────────────────────────────
 
-// Health check (keeps Render alive)
+// Health check (also keeps Render alive)
 app.get('/', (req, res) => {
   res.json({
     status: 'ok',
