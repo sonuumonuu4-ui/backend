@@ -1,8 +1,20 @@
 import express from 'express';
+import cors from 'cors';
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
+// ✅ CORS (MUST be before routes)
+app.use(cors({
+  origin: 'https://frontend-sm.vercel.app',
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type']
+}));
+
+// ✅ Handle preflight requests (IMPORTANT for PUT/DELETE)
+app.options('*', cors());
+
+// Middleware
 app.use(express.json());
 
 // ─── IN-MEMORY DATABASE ─────────────────────────────
@@ -37,12 +49,17 @@ let students = [
   }
 ];
 
-// Helper to generate ID
+// ─── HELPER ─────────────────────────────
 function generateId() {
   return "STU" + Math.floor(1000 + Math.random() * 9000);
 }
 
 // ─── ROUTES ─────────────────────────────
+
+// Health check (IMPORTANT for Render)
+app.get('/', (req, res) => {
+  res.send('API is running 🚀');
+});
 
 // GET all students
 app.get('/api/students', (req, res) => {
@@ -52,25 +69,34 @@ app.get('/api/students', (req, res) => {
 // GET single student
 app.get('/api/students/:id', (req, res) => {
   const student = students.find(s => s.id === req.params.id);
+
   if (!student) {
     return res.status(404).json({ success: false, message: "Student not found" });
   }
+
   res.json({ success: true, data: student });
 });
 
-// ADD student
+// CREATE student
 app.post('/api/students', (req, res) => {
   const newStudent = {
     id: generateId(),
     ...req.body
   };
+
   students.push(newStudent);
-  res.json({ success: true, message: "Student added", data: newStudent });
+
+  res.json({
+    success: true,
+    message: "Student added",
+    data: newStudent
+  });
 });
 
 // UPDATE student
 app.put('/api/students/:id', (req, res) => {
   const index = students.findIndex(s => s.id === req.params.id);
+
   if (index === -1) {
     return res.status(404).json({ success: false, message: "Student not found" });
   }
@@ -80,21 +106,31 @@ app.put('/api/students/:id', (req, res) => {
     ...req.body
   };
 
-  res.json({ success: true, message: "Student updated", data: students[index] });
+  res.json({
+    success: true,
+    message: "Student updated",
+    data: students[index]
+  });
 });
 
 // DELETE student
 app.delete('/api/students/:id', (req, res) => {
   const index = students.findIndex(s => s.id === req.params.id);
+
   if (index === -1) {
     return res.status(404).json({ success: false, message: "Student not found" });
   }
 
   const deleted = students.splice(index, 1);
-  res.json({ success: true, message: "Student deleted", data: deleted[0] });
+
+  res.json({
+    success: true,
+    message: "Student deleted",
+    data: deleted[0]
+  });
 });
 
 // ─── START SERVER ─────────────────────────────
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });
